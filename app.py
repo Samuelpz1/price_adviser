@@ -1,3 +1,4 @@
+# Importing necessary libraries
 import streamlit as st
 import requests
 from streamlit_lottie import st_lottie
@@ -5,37 +6,41 @@ from PIL import Image
 import joblib
 import pandas as pd
 
+# Load the machine learning model
 model = joblib.load("random_forest_model.pkl")
 
+# Function to load Lottie animations from a URL
 def load_lottie_url(url):
     r = requests.get(url)
     if r.status_code != 200:
         return None
     return r.json()
 
+# Load a Lottie animation from a URL and display it
 lottie_coding = load_lottie_url("https://lottie.host/4d84de5d-2c3f-4893-ba22-02724a91a1cb/BKbeXCtsTG.json")
-st_lottie(lottie_coding,height = 300 , key = "car")
+st_lottie(lottie_coding, height=300, key="car")
 
+# Sidebar with input widgets for user interaction
 st.sidebar.header("PRICE ADVISOR")
+brand = st.sidebar.selectbox("Vehicle's brand", ['Chevrolet', 'Ford', 'Honda', 'Nissan', 'Toyota'], 1)
+selected_model = st.sidebar.selectbox("Vehicle's model", ['F-150', 'Civic', 'Altima', 'Camry', 'Silverado'], 1)
+year = st.sidebar.slider("Vehicle's Year", 2010, 2024, 2017)
+mileage = st.sidebar.slider("Vehicle's mileage", 0, 160000, 35000)
+selected_condition = st.sidebar.selectbox("Vehicle's condition", ['Excellent', 'Good', 'Fair'], 1)
 
-brand = st.sidebar.selectbox("Vechicle's brand",['Chevrolet','Ford','Honda','Nissan','Toyota'],1)
-selected_model = st.sidebar.selectbox("Vechicle's model",['F-150','Civic','Altima','Camry','Silverado'],1)
-year = st.sidebar.slider("Vehicle's Year",2010 ,2024, 2017)
-mileage = st.sidebar.slider("Vechicle's mileage",0,160000,35000)
-selected_condition = st.sidebar.selectbox("Vechicle's condition",['Excellent','Good','Fair'],1)
+# Create a DataFrame with selected inputs
+input_data = pd.DataFrame({
+    'Brand': [brand],
+    'Model': [selected_model],
+    'Year': [year],
+    'Mileage': [mileage],
+    'Condition': [selected_condition]
+})
 
-input_data = pd.DataFrame( {
-    'Brand' : [brand],
-    'Model' : [selected_model],
-    'Year' : [year],
-    'Mileage' : [mileage],
-    'Condition' : [selected_condition]
-    })
+# Encode categorical variables
+input_data = pd.get_dummies(input_data, columns=['Brand', 'Model', 'Condition'])
 
-#codificar las variales categoricas
-input_data = pd.get_dummies(input_data, columns=['Brand','Model','Condition'])
-
-# Asegurarse de que las columnas coincidan con las columnas utilizadas durante el entrenamiento
+# Ensure input data columns match the training data columns
 df_encoded = pd.read_csv('df_encoded.csv')
 df_encoded_columns = df_encoded.columns.tolist()
 missing_columns = set(df_encoded.columns) - set(input_data.columns)
@@ -44,25 +49,17 @@ for column in missing_columns:
 
 missing_columns = set(df_encoded.columns) - set(input_data.columns)
 
-# Reordenar las columnas para que coincidan con el orden utilizado durante el entrenamiento
+# Reorder columns to match the training data
 input_data = input_data[df_encoded_columns]
 
-# Eliminar la columna 'Price' de los datos de entrada
+# Remove 'Price' column from input data
 if 'Price' in input_data.columns:
     input_data = input_data.drop('Price', axis=1)
 
-print(input_data)
-print(df_encoded_columns)
-# Realizar la predicción utilizando el modelo
+# Make prediction using the model
 predicted_price = model.predict(input_data)
-print(type(predicted_price[0]))
 
-# Mostrar el resultado al usuario
-
-#st.write(f"The predicted price of the vehicle is: ${'{:,.2f}'.format(predicted_price[0])}")
-
-# st.title("Price Advisor")
-
+# Display the predicted price range to the user
 st.markdown("<h1 style= 'text-align: center; ' > Price Advisor</h1>", unsafe_allow_html=True)
 min_predicted = predicted_price * 0.9
 max_predicted = predicted_price * 1.1
@@ -81,5 +78,3 @@ with st.container():
         with r_right_column:
             st.header("Max Price")
             st.write(f"${'{:,.2f}'.format(max_predicted[0])}")
-
-
