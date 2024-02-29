@@ -9,9 +9,13 @@ import pickle
 
 # Load the dataset
 df = pd.read_csv("data.csv")
+#Delete column Vin
+df = df.drop('Vin', axis = 1)
+df = df.drop('City', axis = 1)
+print(df.head(5))
 
 # Perform one-hot encoding for categorical variables
-df_encoded = pd.get_dummies(df, columns=['Brand', 'Model', 'Condition'])
+df_encoded = pd.get_dummies(df, columns=['Make', 'Model', 'State'])
 
 # Save the encoded dataframe to a new CSV file
 df_encoded.to_csv("df_encoded.csv", index=False)
