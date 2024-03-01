@@ -7,7 +7,7 @@ import joblib
 import pandas as pd
 
 # Load the machine learning model
-model = joblib.load("random_forest_model.pkl")
+modelo = joblib.load("random_forest_model.pkl")
 
 # Function to load Lottie animations from a URL
 def load_lottie_url(url):
@@ -22,11 +22,28 @@ st_lottie(lottie_coding, height=300, key="car")
 
 # Sidebar with input widgets for user interaction
 st.sidebar.header("PRICE ADVISOR")
-brand = st.sidebar.selectbox("Vehicle's brand", ['Chevrolet', 'Ford', 'Honda', 'Nissan', 'Toyota'], 1)
-selected_model = st.sidebar.selectbox("Vehicle's model", ['F-150', 'Civic', 'Altima', 'Camry', 'Silverado'], 1)
+
+df = pd.read_csv("data.csv")
+makes = df['Make'].unique()
+states = df['State'].unique()
+model_dict = {}
+for maker in makes:
+    model_dict[maker] = []
+
+for index, row in df[['Make','Model']].iterrows():
+    make = row['Make']
+    model = row['Model']
+    if model not in model_dict[make]:
+        model_dict[make].append(model)
+
+state = st.sidebar.selectbox("State", states, 1)
+brand = st.sidebar.selectbox("Vehicle's manufacturer", makes, 1)
+selected_model = st.sidebar.selectbox("Vehicle's model", model_dict[brand], 1)
 year = st.sidebar.slider("Vehicle's Year", 2010, 2024, 2017)
-mileage = st.sidebar.slider("Vehicle's mileage", 0, 160000, 35000)
-selected_condition = st.sidebar.selectbox("Vehicle's condition", ['Excellent', 'Good', 'Fair'], 1)
+mileage = st.sidebar.number_input("Vehicle's mileage", 0, None)
+
+#sidebar.slider("Vehicle's mileage", 0, df['Mileage'].max(), 35000)
+
 
 # Create a DataFrame with selected inputs
 input_data = pd.DataFrame({
@@ -34,11 +51,11 @@ input_data = pd.DataFrame({
     'Model': [selected_model],
     'Year': [year],
     'Mileage': [mileage],
-    'Condition': [selected_condition]
+    'State': [state]
 })
 
 # Encode categorical variables
-input_data = pd.get_dummies(input_data, columns=['Brand', 'Model', 'Condition'])
+input_data = pd.get_dummies(input_data, columns=['Brand', 'Model', 'State'])
 
 # Ensure input data columns match the training data columns
 df_encoded = pd.read_csv('df_encoded.csv')
@@ -57,7 +74,7 @@ if 'Price' in input_data.columns:
     input_data = input_data.drop('Price', axis=1)
 
 # Make prediction using the model
-predicted_price = model.predict(input_data)
+predicted_price = modelo.predict(input_data)
 
 # Display the predicted price range to the user
 st.markdown("<h1 style= 'text-align: center; ' > Price Advisor</h1>", unsafe_allow_html=True)
